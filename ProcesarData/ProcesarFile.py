@@ -7,10 +7,9 @@ from Modulos.DeterminarTemas.DT_main import DT_ServiceConsult
 
 from fastapi import  HTTPException
 import pandas as pd
-import numpy as np
 import httpx
 
-class ProcesarData:    
+class ProcesarFile:    
 
     HEADER_CSV = ["CodProducto","NombreProducto","DescripcionProducto","PrecioProducto","Imagen", #Info Producto
                   "NombreCategoria", #Info Categoria
@@ -18,7 +17,7 @@ class ProcesarData:
                   "Comentario","Fecha"] # Info Comentario
     
        
-    def __init__(self, headers, id_user, user_name):
+    def __init__(self, headers, id_user, user_name, persist_stast = False):
         self._PS = ServiceConsult(headers)
         self._CT = CT_ServiceConsult(headers)
         self._DT = DT_ServiceConsult(headers)
@@ -30,6 +29,8 @@ class ProcesarData:
         self.categorias = []
         self.clientes = []
         self.comentarios = []
+        
+        self.persist_stast = persist_stast
     
     async def procesar_archivo(self, file, sep = ";"):
         try:    
@@ -167,20 +168,20 @@ class ProcesarData:
                 self.comentarios.append(com)
                 
                 com_ct = CT_Sentence()
-                com_ct.id = com.id
+                com_ct.id = str(com.id)
                 com_ct.text = com.contenido
                 com_ct.fecha = com.fecha
                 
                 com_dt = DT_Sentence()
-                com_dt.id = com.id
+                com_dt.id = str(com.id)
                 com_dt.text = com.contenido 
                 com_dt.fecha = com.fecha 
                 
                 list_com_ct.append(com_ct)
                 list_com_dt.append(com_dt)
         
-        if len(list_com_ct)>0: await self._CT.repo_service.subir_comentarios(self.user_name, list_com_ct)
-        if len(list_com_dt)>0: await self._DT.repo_service.subir_comentarios(self.user_name, list_com_dt)
+        if len(list_com_ct)>0: await self._CT.repo_service.subir_comentarios(self.user_name, list_com_ct, self.persist_stast)
+        if len(list_com_dt)>0: await self._DT.repo_service.subir_comentarios(self.user_name, list_com_dt, self.persist_stast)
         
                 
     async def _match_categoria_producto(self):

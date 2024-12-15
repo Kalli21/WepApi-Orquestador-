@@ -9,9 +9,7 @@ class CT_ServiceConsult():
         self.repo_service   : RepoService = RepoService(headers)
         self.model_service  : ModelService = ModelService(headers)
         
-        
-        
-         
+    
         
         
         

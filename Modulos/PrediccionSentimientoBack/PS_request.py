@@ -63,3 +63,16 @@ class Usuario(BaseModel):
     productos: Optional[List[Producto]] = None
     archivos: Optional[List[Archivo]] = None
     
+### FILTROS
+
+class PS_CategoriasFiltros(BaseModel):
+    fechaIni: Optional[str] = None
+    fechaFin: Optional[str] = None
+    categoriasId: List[int] = []
+
+class PS_ComentariosFiltros(BaseModel):
+    fechaIni: Optional[str] = None 
+    fechaFin: Optional[str] = None
+    idProducto: Optional[int] = None
+    categoriasId: Optional[List[int]] = None
+    userName: Optional[str] = None 

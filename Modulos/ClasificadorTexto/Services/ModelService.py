@@ -4,10 +4,12 @@ from .HttpConsult import HttpConsult
 
 class ModelService(HttpConsult):
 
-    async def predecir_sentimiento(self, user_id) :
+    async def predecir_sentimiento(self, user_id, predic_all: bool = False) :
         
         try:     
-            url = "/predecir/" + user_id   
+            url = f"/predecir/{user_id}"
+            if predic_all:
+                url += '?predic_all=true' 
             return await self._send_request(url)       
 
         except ValueError as exc:

@@ -12,15 +12,19 @@ class HttpConsult():
     
     async def _send_request(self, url, tipo = "get", body = None)-> PS_Response:
         try:
-            url = self.base_url + url           
+            url = self.base_url + url
+            if body: body = body.model_dump(exclude_unset=True)   
             # Realizar la solicitud HTTP al servicio .NET
             async with httpx.AsyncClient(verify=False) as client:
                 if tipo == "get":
                     response = await client.get(url, headers=self.headers)
                 if tipo == "post":
-                    response = await client.post(url, headers=self.headers, json=body.model_dump(exclude_unset=True))
+                    if len(body) == 0 : body = {}
+                    response = await client.post(url, headers=self.headers, json=body)
                 if tipo == "put":
-                    response = await client.put(url, headers=self.headers, json=body.model_dump(exclude_unset=True))
+                    response = await client.put(url, headers=self.headers, json=body)
+                if tipo == "delete":
+                    response = await client.delete(url, headers=self.headers)
             
             # Verificar el código de estado HTTP
             if response.status_code//10 != 20:
