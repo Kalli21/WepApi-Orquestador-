@@ -247,17 +247,17 @@ async def generar_info(request :Request, user_name: str, filtros: GeneralInfoFil
 
     except ValueError as exc:
         if CT_stats:
-            CT_stats.estado = 0
+            CT_stats.estado = 2
             await CT_consult.repo_service.update_stats(user_name, CT_stats)
         if DT_stats:
-            DT_stats.estado = 0
+            DT_stats.estado = 2
             await DT_consult.repo_service.update_stats(user_name, DT_stats)
         raise HTTPException(status_code=500, detail=f"Error al ejecutar el analisis: {exc}")
     except Exception as exc:
         if CT_stats:
-            CT_stats.estado = 0
+            CT_stats.estado = 2
             await CT_consult.repo_service.update_stats(user_name, CT_stats)
         if DT_stats:
-            DT_stats.estado = 0
+            DT_stats.estado = 2
             await DT_consult.repo_service.update_stats(user_name, DT_stats)
         raise HTTPException(status_code=500, detail=f"Error inesperado: {exc}")
