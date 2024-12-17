@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, HTTPException, status
 from typing import  Optional
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from ProcesarData.ProcesarDataMain import ProcesarDataMain
 from ProcesarData.PD_request import GeneralInfoFiltro
 from Modulos.PrediccionSentimientoBack.PS_request import  Usuario
@@ -260,4 +261,53 @@ async def generar_info(request :Request, user_name: str, filtros: GeneralInfoFil
         if DT_stats:
             DT_stats.estado = 2
             await DT_consult.repo_service.update_stats(user_name, DT_stats)
+        raise HTTPException(status_code=500, detail=f"Error inesperado: {exc}")
+    
+@app.get("/info/{user_name}")
+async def general_info(request :Request, user_name: str, tipo_info: Optional[str] = "all"):
+    
+    head = request.headers.get('Authorization')
+    head = {"Authorization": head}
+    consult =  ServiceConsult(head)
+    resp = {}
+    try:
+        #Autorizacion
+        await consult.usuario_service.autorizacion_usuario()
+
+        CT_consult = CT_ServiceConsult(head)
+        DT_consult = DT_ServiceConsult(head)
+        
+        
+        if tipo_info.lower() == "all" or tipo_info.lower() == "general" :        
+            CT_general_info = await CT_consult.repo_service.get_info_general(user_name)
+            DT_general_info = await DT_consult.repo_service.get_info_general(user_name)
+            
+            resp['general_info'] = {}
+            if CT_general_info: resp['general_info'].update(CT_general_info)
+            if DT_general_info: resp['general_info'].update(DT_general_info)
+            
+        if tipo_info.lower() == "all" or tipo_info.lower() == "producto" :        
+            CT_producto_info = await CT_consult.repo_service.get_info_producto(user_name)
+            DT_producto_info = await DT_consult.repo_service.get_info_producto(user_name)
+            
+            resp['producto_info'] = {}
+            if CT_producto_info :resp['producto_info'].update(CT_producto_info)
+            if DT_producto_info : resp['producto_info'].update(DT_producto_info)
+            
+        if tipo_info.lower() == "all" or tipo_info.lower() == "stats" :        
+            CT_stats = await CT_consult.repo_service.get_stats(user_name)
+            DT_stats = await DT_consult.repo_service.get_stats(user_name)
+            
+            resp['stats_ct'] = {}
+            if CT_stats: resp['stats_ct'].update(CT_stats)
+            resp['stats_dt'] = {}
+            if DT_stats: resp['stats_dt'].update(DT_stats)
+        
+        status_code = status.HTTP_200_OK
+        json_resultados = jsonable_encoder(resp)
+        return JSONResponse(status_code=status_code, content=json_resultados)
+    
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail=f"Error al ejecutar el analisis: {exc}")
+    except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Error inesperado: {exc}")

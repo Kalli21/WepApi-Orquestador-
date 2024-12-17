@@ -74,4 +74,21 @@ class RepoService(HttpConsult):
         except ValueError as exc:
             raise HTTPException(status_code=500, detail=f"Error al procesar la respuesta: {exc}")
         
+    async def get_info_general(self, user_id) :
+        
+        try:     
+            url = f"/info/general/{user_id}"   
+            return await self._send_request(url)       
+
+        except ValueError as exc:
+            raise HTTPException(status_code=500, detail=f"Error al procesar la respuesta: {exc}")
+        
+    async def get_info_producto(self, user_id) :
+        
+        try:     
+            url = f"/info/producto/{user_id}"   
+            return await self._send_request(url)       
+
+        except ValueError as exc:
+            raise HTTPException(status_code=500, detail=f"Error al procesar la respuesta: {exc}")
     
