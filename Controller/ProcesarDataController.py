@@ -13,6 +13,7 @@ from Modulos.ClasificadorTexto.CT_main import CT_ServiceConsult
 from Modulos.DeterminarTemas.DT_main import DT_ServiceConsult
 from Modulos.ClasificadorTexto.CT_request import CT_StatsUser, CT_InfoGrafGeneral
 from Modulos.DeterminarTemas.DT_request import DT_StatsUser, DT_InfoGrafGeneral
+from Modulos.ResponseDTO import ResponseDTO
 
 import asyncio
 
@@ -26,6 +27,10 @@ async def procesar_archivo(request :Request,user_name: str,id_arch: int, clean_d
     consult =  ServiceConsult(head)
     storage = FbConsult()
     aux_user = None
+    
+    response = ResponseDTO()
+    response.isSuccess = True
+    
     try:
         #Autorizacion
         await consult.usuario_service.autorizacion_usuario()
@@ -36,8 +41,10 @@ async def procesar_archivo(request :Request,user_name: str,id_arch: int, clean_d
         aux_user = user
 
         if user.estado == 2:
+            response.isSuccess = False
+            response.displayMessage = "Procesando un archivo"            
             status_code = status.HTTP_226_IM_USED
-            return JSONResponse(status_code=status_code, content=f"El usuario {user_name} ya esta procesando un archivo")
+            return JSONResponse(status_code=status_code, content=response.model_dump())
 
         user.estado = 2
         await consult.usuario_service.update_usuario(user)
@@ -60,24 +67,25 @@ async def procesar_archivo(request :Request,user_name: str,id_arch: int, clean_d
                     arch = ar
                     break
         if not arch:
-            resp = ResponseDTO()
-            resp.isSuccess = False
-            resp.displayMessage = f"El archivo con id {id_arch} no encontrado."
-
+            response.isSuccess = False
+            response.displayMessage = f"El archivo con id {id_arch} no encontrado."
             status_code = status.HTTP_404_NOT_FOUND
-
-            return JSONResponse(status_code=status_code, content=resp.model_dump())
+            return JSONResponse(status_code=status_code, content=response.model_dump())
 
         dat = await storage.fb_storage.get_file(arch.url)
 
         # Procesar Datos
         procesar_data = ProcesarDataMain(head,user.id,user.userName,persist_stast)
-        resp = await procesar_data.file.procesar_archivo(dat, arch.separador)
-
+        resp = await procesar_data.file.procesar_archivo(dat, arch.separador, arch.finLinea)
+            
         user.estado = 3
         await consult.usuario_service.update_usuario(user)
-
-        return resp
+        
+        response.displayMessage = resp
+        response.isSuccess = procesar_data.file.df_val         
+        status_code = status.HTTP_200_OK     
+        
+        return JSONResponse(status_code=status_code, content=response.model_dump())
 
     except ValueError as exc:
         if aux_user:
@@ -177,6 +185,10 @@ async def generar_info(request :Request, user_name: str, filtros: GeneralInfoFil
     consult =  ServiceConsult(head)
     CT_stats = None
     DT_stats = None
+    
+    response = ResponseDTO()
+    response.isSuccess = True
+    
     try:
         #Autorizacion
         await consult.usuario_service.autorizacion_usuario()
@@ -189,8 +201,10 @@ async def generar_info(request :Request, user_name: str, filtros: GeneralInfoFil
         CT_stats = CT_StatsUser(**CT_stats)
 
         if CT_stats.estado == 3:
+            response.isSuccess = False
+            response.displayMessage = "Se esta generarndo informacion..."
             status_code = status.HTTP_226_IM_USED
-            return JSONResponse(status_code=status_code, content=f"El usuario {user_name} esta generarndo informacion.")
+            return JSONResponse(status_code=status_code, content=response.model_dump())  
 
         CT_stats.estado = 3
         await CT_consult.repo_service.update_stats(user_name, CT_stats)
@@ -231,8 +245,18 @@ async def generar_info(request :Request, user_name: str, filtros: GeneralInfoFil
                 resp_dt = await DT_consult.repo_service.create_info_general(user_name, req_dt)
             else:
                 resp_ct = await CT_consult.repo_service.create_info_producto(user_name, req)
-                resp_dt = await DT_consult.repo_service.create_info_producto(user_name, req_dt)
-
+                resp_dt = await DT_consult.repo_service.create_info_producto(user_name, req_dt)            
+            
+            if filtros.get_comentarios:
+                response.result = procesar_data.graf.info_comentarios
+                response.filtroInfo = procesar_data.graf.info_filtro
+                
+            response.displayMessage = f"{resp_ct} en CT y {resp_dt} en DT"
+        
+        else:
+            response.isSuccess = False
+            response.displayMessage = "No se encontro informacion."
+        
         # Cambiar Estado Usuario Modelos -- Fin de Obtencion de Informacion
         CT_stats = await CT_consult.repo_service.get_stats(user_name)
         CT_stats = CT_StatsUser(**CT_stats)
@@ -242,10 +266,10 @@ async def generar_info(request :Request, user_name: str, filtros: GeneralInfoFil
         DT_stats = await DT_consult.repo_service.get_stats(user_name)
         DT_stats = DT_StatsUser(**DT_stats)
         DT_stats.estado = 4
-        await DT_consult.repo_service.update_stats(user_name, DT_stats)
-
-        return f"{resp_ct} en CT y {resp_dt} en DT"
-
+        await DT_consult.repo_service.update_stats(user_name, DT_stats)      
+        
+        return response
+    
     except ValueError as exc:
         if CT_stats:
             CT_stats.estado = 2
@@ -302,11 +326,56 @@ async def general_info(request :Request, user_name: str, tipo_info: Optional[str
             if CT_stats: resp['stats_ct'].update(CT_stats)
             resp['stats_dt'] = {}
             if DT_stats: resp['stats_dt'].update(DT_stats)
+            
+            resp_user = await consult.usuario_service.get_usuario(user_name)
+            user = Usuario(**resp_user.result)
+            resp['stats_ps'] = {}
+            if user: resp['stats_ps'] = {'estado' : user.estado}            
         
         status_code = status.HTTP_200_OK
         json_resultados = jsonable_encoder(resp)
         return JSONResponse(status_code=status_code, content=json_resultados)
     
+    except ValueError as exc:
+        raise HTTPException(status_code=500, detail=f"Error al ejecutar el analisis: {exc}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error inesperado: {exc}")
+    
+    
+@app.post("/GetComentarios/{user_name}")
+async def generar_info(request :Request, user_name: str, filtros: GeneralInfoFiltro):
+    head = request.headers.get('Authorization')
+    head = {"Authorization": head}
+    consult =  ServiceConsult(head)
+    
+    response = ResponseDTO()
+    response.isSuccess = True
+    
+    try:
+        #Autorizacion
+        await consult.usuario_service.autorizacion_usuario()
+
+        resp_user = await consult.usuario_service.get_usuario(user_name)
+        user = Usuario(**resp_user.result)
+
+        # Procesar Datos
+        procesar_data = ProcesarDataMain(head,user.id,user.userName,filtros=filtros)
+
+        resp = await procesar_data.graf.get_comentarios_min_info(calcular=False)
+
+        if resp:            
+            if filtros.get_comentarios:
+                response.result = procesar_data.graf.info_comentarios
+                response.filtroInfo = procesar_data.graf.info_filtro
+            return response
+        
+        else:
+            response.isSuccess = False
+            response.displayMessage = "No se encontro informacion."
+            status_code = status.HTTP_200_OK
+            return JSONResponse(status_code=status_code, content=response.model_dump())
+        
+
     except ValueError as exc:
         raise HTTPException(status_code=500, detail=f"Error al ejecutar el analisis: {exc}")
     except Exception as exc:

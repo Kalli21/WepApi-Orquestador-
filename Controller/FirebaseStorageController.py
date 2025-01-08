@@ -1,14 +1,15 @@
 from fastapi import APIRouter, File, UploadFile, Request, HTTPException, status
+from typing import  Optional
 from fastapi.responses import JSONResponse
 from Modulos.PrediccionSentimientoBack.PS_request import Archivo, Usuario
 from Modulos.FirebaseStorage.FS_main import FbConsult
 from Modulos.PrediccionSentimientoBack.PS_main import ServiceConsult
-
+from urllib.parse import unquote
 
 app = APIRouter()
 
 @app.post("/upload/{user_name}")
-async def upload_file(request :Request,user_name: str,sep: str, file: UploadFile = File(...)):
+async def upload_file(request :Request,user_name: str,sep: str, fin_linea: Optional[str] = None, file: UploadFile = File(...)):
     try:
         head = request.headers.get('Authorization')
         head = {"Authorization": head}
@@ -32,7 +33,8 @@ async def upload_file(request :Request,user_name: str,sep: str, file: UploadFile
             
             arch.nombre = file.filename
             arch.separador = sep
-            arch.url = arch_resp['url']
+            arch.finLinea = fin_linea
+            arch.url = unquote(arch_resp['url'])
             
             resp = await consult.archivo_service.update_archivo(arch)
             
@@ -43,7 +45,8 @@ async def upload_file(request :Request,user_name: str,sep: str, file: UploadFile
             arch = Archivo()
             arch.nombre = file.filename
             arch.separador = sep
-            arch.url = arch_resp['url']
+            arch.finLinea = fin_linea
+            arch.url = unquote(arch_resp['url'])
             arch.usuarioId = user.id
 
             status_code = status.HTTP_201_CREATED

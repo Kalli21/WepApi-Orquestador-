@@ -10,5 +10,6 @@ class GeneralInfoFiltro(BaseModel):
     PS_filtros_com: Optional[PS_ComentariosFiltros] = PS_ComentariosFiltros()
     DT_filtros_com: Optional[DT_FiltroSentences] = DT_FiltroSentences()
     cant_ranking: Optional[int] = None
+    get_comentarios: Optional[bool] = False
     
   

@@ -6,6 +6,7 @@ from Modulos.ClasificadorTexto.CT_response import RelacionComCat
 from Modulos.ClasificadorTexto.CT_request import CT_InfoGraf
 from Modulos.ClasificadorTexto.CT_main import CT_ServiceConsult
 from Modulos.DeterminarTemas.DT_main import DT_ServiceConsult
+from Modulos.ComentarioDTO import ComentarioDTO
 from .PD_request import GeneralInfoFiltro
 
 
@@ -19,7 +20,7 @@ class ProcesarDataGraf:
         self.user_name = user_name
         
         self.CT_filtro_com = filtros.CT_filtro_com
-        self.PD_filtros_com = filtros.PS_filtros_com
+        self.PS_filtros_com = filtros.PS_filtros_com
         self.DT_filtros_com = filtros.DT_filtros_com
         self.msg = ""
         self.com_min_info = []
@@ -34,24 +35,36 @@ class ProcesarDataGraf:
         self.graf_bar_date = []
         self.graf_word_cloud = []
         
+        self.info_comentarios = []
+        self.get_coment = filtros.get_comentarios
+        self.info_filtro = None
+        
     async def get_comentarios_min_info(self, calcular = False, cal_prod = True, cal_temas = False):
         #Obter Comentarios con el filtrado
         
         try:
+            resp_cat = await self._PS.comentario_service.get_comentarios_min_info(self.PS_filtros_com)
+            
+            # if self.get_coment:
+            #     aux_info = resp_cat.result
+            #     if len(aux_info)>0 :
+            #         aux_info = pd.DataFrame(aux_info)
+            #         list_ids = aux_info['idComentario'].astype(str).unique().tolist()
+            #         self.DT_filtros_com.listId = list_ids
+            #         self.CT_filtro_com.listId = list_ids
+
             data_temas = None
             if cal_temas:
                 self.DT_filtros_com.min_info = True
                 data_temas = await self._DT.repo_service.get_sentences(self.user_name, self.DT_filtros_com)
                  
             comentarios = await self._CT.repo_service.get_comentarios(self.user_name, self.CT_filtro_com)
-            
-            resp_cat = await self._PS.comentario_service.get_comentarios_min_info(self.PD_filtros_com)
-            
+                        
             categorias = None
             
             if resp_cat.isSuccess:
                 categorias = resp_cat.result
-
+                self.info_filtro = resp_cat.filtroInfo
                 if len(categorias)>0 and len(comentarios)>0:
                     
                     # Convertir listas a DataFrames
@@ -68,9 +81,9 @@ class ProcesarDataGraf:
                     df_comentarios['id'] = df_comentarios['id'].astype(str)
 
                     # Realizar el Left Join
-                    df_merge = pd.merge(df_categorias, df_comentarios, left_on='idComentario', right_on='id', how='left')
+                    df_merge = pd.merge(df_categorias, df_comentarios, left_on='idComentario', right_on='id', how='inner')
                     if cal_temas:
-                        df_merge = pd.merge(df_merge, df_temas, left_on='idComentario', right_on='id_tema', how='left')
+                        df_merge = pd.merge(df_merge, df_temas, left_on='idComentario', right_on='id_tema', how='inner')
                         
                     if calcular: 
                         self._calcular_valores_graf_circulo(df_merge)
@@ -84,6 +97,9 @@ class ProcesarDataGraf:
                         info = RelacionComCat.model_validate(row.to_dict())
                         info.correlativo = index + 1  # Agregar el índice como atributo adicional
                         self.com_min_info.append(info)
+                    
+                    if self.get_coment:
+                        self._obetener_comentarios(df_merge, cal_temas)
                     
                     return True         
                         
@@ -254,6 +270,29 @@ class ProcesarDataGraf:
                         self.graf_word_cloud.append(valor)
                 else:
                     self.graf_word_cloud.append(valor)
+
+        except ValueError as exc:
+            raise HTTPException(status_code=500, detail=f"Error al procesar la respuesta: {exc}")
+        
+    def _obetener_comentarios(self, df, cal_temas):
+        try:            
+            for index, row in df.iterrows():
+                coment = ComentarioDTO()
+                coment.id = int(row['idComentario'])
+                coment.correlativo = index + 1
+                coment.contenido = row['text']
+                coment.fecha = row['fecha']
+                coment.producto = row['nombreProducto']
+                coment.cliente = row['codCliente']
+                
+                if cal_temas:
+                    coment.tema = row['tema']
+                
+                coment.sentimiento = str(row['categoria'])
+                coment.probabilidad = row['probabilidades']
+                
+                self.info_comentarios.append(coment)
+                
 
         except ValueError as exc:
             raise HTTPException(status_code=500, detail=f"Error al procesar la respuesta: {exc}")

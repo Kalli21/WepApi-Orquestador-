@@ -7,3 +7,4 @@ class ResponseDTO(BaseModel):
     result: Optional[Any] = None
     displayMessage: Optional[str] = None
     errorMessages: Optional[List[str]] = None
+    filtroInfo: Optional[Any] = None

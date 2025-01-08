@@ -7,3 +7,4 @@ class PS_Response(BaseModel):
     result: Optional[Any] = None
     displayMessage: Optional[str] = None
     errorMessages: Optional[List[str]] = None
+    filtroInfo: Optional[Any] = None

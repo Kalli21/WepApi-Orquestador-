@@ -47,6 +47,7 @@ class Archivo(BaseModel):
     id: Optional[int] = None
     nombre: Optional[str] = None
     separador: str = None
+    finLinea: Optional[str] = None
     url: str = None
     usuarioId: int = None
 
@@ -71,6 +72,11 @@ class PS_CategoriasFiltros(BaseModel):
     categoriasId: List[int] = []
 
 class PS_ComentariosFiltros(BaseModel):
+    pageNumber: Optional[int] = 1
+    pageSize: Optional[int] = 10
+    totalPages: Optional[int] = None
+    totalItems: Optional[int] = None
+    paginacion: Optional[bool] = False
     fechaIni: Optional[str] = None 
     fechaFin: Optional[str] = None
     idProducto: Optional[int] = None

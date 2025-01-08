@@ -31,10 +31,11 @@ class ProcesarFile:
         self.comentarios = []
         
         self.persist_stast = persist_stast
+        self.df_val = True
     
-    async def procesar_archivo(self, file, sep = ";"):
+    async def procesar_archivo(self, file, sep = ";", fin_linea = None):
         try:    
-            self.df = pd.read_csv(file, sep = sep)
+            self.df = pd.read_csv(file, sep = sep, lineterminator = fin_linea )
                 
             if not self._validar_df():
                 return self.msg
@@ -53,25 +54,24 @@ class ProcesarFile:
             raise HTTPException(status_code=500, detail=f"Error al procesar la respuesta: {exc}")
         
     def _validar_df(self):
-        val = True                
+        self.df_val = True                
         # Convertimos las listas en conjuntos y las comparamos
-        val = set(self.HEADER_CSV) == set(self.df.columns.tolist())
-        if not val:
+        self.df_val = set(self.HEADER_CSV) == set(self.df.columns.tolist())
+        if not self.df_val:
             self.msg += f"No se encontro las columas{set(self.HEADER_CSV) - set(self.df.columns.tolist())}\n"        
-        return val
+        return self.df_val
     
     def _limpiar_df(self):
         self.df.dropna(axis=0, how='all', inplace= True)
-        self.df.dropna(axis=1, how='all', inplace= True)        
+        # self.df.dropna(axis=1, how='all', inplace= True)        
         self.df.dropna(subset=['Comentario'], axis=0, inplace= True)
         self.df.drop_duplicates(keep='first', inplace= True)
         
         self.df["CodProducto"] = self.df["CodProducto"].astype(str)
         
-        # list_str = set(self.HEADER_CSV) -set('Fecha','PrecioProducto')
-        # list_str = list_str.tolist()
+        list_str = list(set(self.df.columns.tolist()) - set(['Fecha','PrecioProducto']))
         
-        # self.df[list_str] = self.df[list_str].astype(str) 
+        self.df[list_str] = self.df[list_str].astype(str) 
         # self.df['Fecha'] = pd.to_datetime(self.df['Fecha'], format='%d/%m/%Y')       
         # self.df['PrecioProducto'] = self.df['PrecioProducto'].astype(float)   
         

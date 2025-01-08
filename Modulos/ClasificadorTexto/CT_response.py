@@ -10,6 +10,6 @@ class RelacionComCat(BaseModel):
     nombreProducto: Optional[str] = None	
     codCliente: Optional[str] = None	
     text: Optional[str] = None	
-    robabilidades: Optional[List[float]] = None	
+    probabilidades: Optional[List[float]] = None	
     categoria: Optional[int] = None	
     fecha: Optional[str] = None
