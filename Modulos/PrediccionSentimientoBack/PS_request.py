@@ -82,3 +82,6 @@ class PS_ComentariosFiltros(BaseModel):
     idProducto: Optional[int] = None
     categoriasId: Optional[List[int]] = None
     userName: Optional[str] = None 
+    
+class PS_ProductoFiltros(BaseModel):
+    nombre: Optional[str] = None

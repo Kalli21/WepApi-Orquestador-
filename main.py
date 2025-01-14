@@ -12,12 +12,14 @@ origins = [
     "http://127.0.0.1:8888",
     "http://54.87.222.35",
     "http://54.83.42.195:8080",
-    "http://proyecto-tesis-acfront-angular.s3-website-us-east-1.amazonaws.com"    
+    "http://proyecto-tesis-acfront-angular.s3-website-us-east-1.amazonaws.com",
+    "https://539r153q-4200.brs.devtunnels.ms"    
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    # allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

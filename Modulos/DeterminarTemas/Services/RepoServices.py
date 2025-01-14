@@ -90,3 +90,13 @@ class RepoService(HttpConsult):
 
         except ValueError as exc:
             raise HTTPException(status_code=500, detail=f"Error al procesar la respuesta: {exc}")
+        
+    async def get_temas(self, user_id, numWord: int) :
+        
+        try:     
+            url = f"/temas/{user_id}/{numWord}" 
+            return await self._send_request(url)       
+
+        except ValueError as exc:
+            raise HTTPException(status_code=500, detail=f"Error al procesar la respuesta: {exc}")
+     

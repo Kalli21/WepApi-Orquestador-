@@ -26,3 +26,12 @@ class CategoriaService(HttpConsult):
         except ValueError as exc:
             raise HTTPException(status_code=500, detail=f"Error al procesar la respuesta: {exc}")
         
+    async def get_categoria_by_user(self, user_name: str) -> PS_Response:
+        
+        try:      
+            url = f"/Categoria/username/{user_name}"        
+            return await self._send_request(url)       
+
+        except ValueError as exc:
+            raise HTTPException(status_code=500, detail=f"Error al procesar la respuesta: {exc}")
+    

@@ -11,6 +11,7 @@ class HttpConsult():
         self.headers = headers
     
     async def _send_request(self, url, tipo = "get", body = None)-> PS_Response:
+        
         try:
             url = self.base_url + url
             if body: body = body.model_dump(exclude_unset=True)   
@@ -28,9 +29,16 @@ class HttpConsult():
             
             # Verificar el código de estado HTTP
             if response.status_code//10 != 20:
+                if response.content:  # Verifica si hay contenido en la respuesta
+                    try:
+                        detail = response.json()  # Intenta parsear como JSON
+                    except ValueError:
+                        detail = response.text or "Respuesta no válida"
+                else:
+                    detail = None
                 raise HTTPException(
                     status_code=response.status_code,
-                    detail= response.json()
+                    detail= detail
                 )
             
             # Parsear la respuesta JSON al modelo ResponseDTO
