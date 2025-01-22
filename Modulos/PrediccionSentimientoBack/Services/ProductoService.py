@@ -34,7 +34,7 @@ class ProductoService(HttpConsult):
 
     async def get_producto(self, id: int) -> PS_Response:        
         try:   
-            url = f"/api/Producto/{id}"        
+            url = f"/Producto/{id}"        
             return await self._send_request(url)       
 
         except ValueError as exc:
