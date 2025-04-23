@@ -5,7 +5,7 @@ from Modulos.PrediccionSentimientoBack.PS_main import ServiceConsult
 app = APIRouter()
 
 @app.get("/temas/{userName}/{numWord}")
-async def get_autorizacion(request :Request, userName: str, numWord: int):
+async def get_temas(request :Request, userName: str, numWord: int):
     try:
         head = request.headers.get('Authorization')
         head = {"Authorization": head}
