@@ -90,7 +90,7 @@ class ProcesarDataGraf:
                         if not cal_prod: self._calcular_valores_graf_ranking_prod(df_merge)
                         self._calcular_valores_graf_bar_cat(df_merge)
                         self._calcular_valores_graf_bar_date(df_merge)
-                        await self._calcular_valores_temas(df_temas, cal_temas)
+                        await self._calcular_valores_temas(df_merge, cal_temas)
                         
                     
                     for index, row in df_merge.iterrows():
